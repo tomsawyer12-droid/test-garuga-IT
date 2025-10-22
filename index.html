@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Wi-Fi Payment Portal</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <main class="card">
+    <h1>Pay to Access Wi-Fi</h1>
+    <p>Buy 24-hour access for <strong>UGX 1,000</strong></p>
+
+    <label for="phone">Mobile Number</label>
+    <input id="phone" type="tel" placeholder="+2567XXXXXXXX" />
+
+    <label for="amount">Amount (UGX)</label>
+    <input id="amount" type="number" value="1000" readonly />
+
+    <button id="payBtn">Pay with Mobile Money</button>
+
+    <div id="status" class="status"></div>
+  </main>
+
+  <script src="portal.js"></script>
+</body>
+</html>
