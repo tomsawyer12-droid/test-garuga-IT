@@ -1,80 +1,58 @@
 import express from "express";
 import fetch from "node-fetch";
 import dotenv from "dotenv";
-import cors from "cors";
 import path from "path";
 import { fileURLToPath } from "url";
 
 dotenv.config();
 
 const app = express();
-app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(path.dirname(fileURLToPath(import.meta.url)))));
 
-// Get correct path for current directory
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-// Serve static files (HTML, CSS, JS)
-app.use(express.static(__dirname));
-
-// Serve index.html at "/"
+// Serve homepage
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+  res.sendFile(path.join(path.dirname(fileURLToPath(import.meta.url)), "index.html"));
 });
 
-// ====== Relworx payment endpoint ======
+// Relworx payment endpoint
 app.post("/api/pay", async (req, res) => {
   const { phone, amount } = req.body;
+
+  if (!phone || !amount) return res.status(400).json({ success: false, message: "Phone and amount are required" });
 
   try {
     const response = await fetch("https://payments.relworx.com/api/mobile-money/request-payment", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Accept": "application/vnd.relworx.v2",  // required by API
+        "Accept": "application/vnd.relworx.v2",
         "Authorization": `Bearer ${process.env.RELWORX_API_KEY}`
       },
       body: JSON.stringify({
-        account_no: "RELB91D9643B2",  // replace with your actual merchant account number
+        account_no: process.env.RELWORX_ACCOUNT,
         reference: "WIFI_" + Date.now(),
-        msisdn: phone.startsWith("+") ? phone : `+256${phone}`, // ensure full international format
+        msisdn: phone.startsWith("+") ? phone : `+256${phone}`,
         currency: "UGX",
         amount: Number(amount),
         description: "Wi-Fi 24hr Access"
       })
     });
 
-    // get raw response first to debug
-    const text = await response.text();
-    console.log("Relworx raw response:", text);
+    const data = await response.json();
+    console.log("Relworx response:", data);
 
-    let data;
-    try {
-      data = JSON.parse(text);
-    } catch (err) {
-      console.error("❌ Invalid JSON from Relworx:", err);
-      return res.json({ success: false, message: "Invalid response from payment gateway", raw: text });
-    }
-
-    if (data.status === "success" || data.code === 200) {
-      res.json({
-        success: true,
-        message: "Payment initiated successfully",
-        reference: data.data?.reference || data.reference
-      });
+    if (data.success === true || data.status === "success") {
+      res.json({ success: true, message: "Payment request sent successfully", data });
     } else {
-      res.json({
-        success: false,
-        message: data.message || "Payment initiation failed",
-        data
-      });
+      res.status(400).json({ success: false, message: data.message || "Payment failed", data });
     }
-  } catch (err) {
-    console.error("Server error:", err);
-    res.json({ success: false, message: "Server error while connecting to Relworx" });
+  } catch (error) {
+    console.error("Server error:", error);
+    res.status(500).json({ success: false, message: "Internal Server Error" });
   }
 });
 
-// Start server
-app.listen(3000, () => console.log("✅ Server running on http://localhost:3000"));
+// Use dynamic Render port
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => console.log(`✅ Server running on port ${PORT}`));

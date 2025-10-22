@@ -1,18 +1,11 @@
-const payBtn = document.getElementById("payBtn");
-const statusDiv = document.getElementById("status");
+const form = document.getElementById("payForm");
+const messageDiv = document.getElementById("message");
 
-payBtn.addEventListener("click", async () => {
-  const phone = document.getElementById("phone").value.trim();
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const phone = document.getElementById("phone").value;
   const amount = document.getElementById("amount").value;
-
-  if (!phone.startsWith("+2567") || phone.length < 10) {
-    statusDiv.textContent = "Enter a valid Uganda mobile number starting with +2567…";
-    statusDiv.className = "status error";
-    return;
-  }
-
-  statusDiv.textContent = "Processing payment, please wait...";
-  statusDiv.className = "status";
+  messageDiv.innerHTML = "Processing payment...";
 
   try {
     const res = await fetch("/api/pay", {
@@ -22,16 +15,9 @@ payBtn.addEventListener("click", async () => {
     });
 
     const data = await res.json();
-
-    if (data.success) {
-      statusDiv.textContent = "Payment request sent. Please approve on your phone.";
-      statusDiv.className = "status success";
-    } else {
-      statusDiv.textContent = "Payment failed: " + (data.message || "Unknown error");
-      statusDiv.className = "status error";
-    }
+    messageDiv.innerHTML = data.success ? `✅ ${data.message}` : `❌ ${data.message}`;
   } catch (err) {
-    statusDiv.textContent = "Network error. Please try again.";
-    statusDiv.className = "status error";
+    messageDiv.innerHTML = "⚠️ Network error. Try again.";
+    console.error(err);
   }
 });
